@@ -8,6 +8,7 @@ services:
     - "80"
     environment:
       TZ: "UTC"
+      VIBENEST_DEMO_RECOVERY_PASSWORD: "${VIBENEST_DEMO_RECOVERY_PASSWORD:-}"
     volumes:
     - wallos-db:/var/www/html/db
     - wallos-logos:/var/www/html/images/uploads/logos
@@ -18,5 +19,5 @@ services:
       start_period: 30s
       retries: 5
 volumes:
-  wallos-db: 
+  wallos-db:
   wallos-logos:

@@ -19,5 +19,9 @@ LABEL org.opencontainers.image.source="https://github.com/NikitaBabenko/vibenest
 # single request consume the whole container budget.
 COPY vibenest/php-fpm.conf /usr/local/etc/php-fpm.d/zzzz-vibenest.conf
 COPY vibenest/php.ini /usr/local/etc/php/conf.d/zzzz-vibenest.ini
+COPY vibenest/demo-recovery-entrypoint.sh /usr/local/bin/vibenest-demo-recovery-entrypoint
+RUN chmod 0755 /usr/local/bin/vibenest-demo-recovery-entrypoint
 
 EXPOSE 80
+
+CMD ["/usr/local/bin/vibenest-demo-recovery-entrypoint"]
