@@ -4,22 +4,19 @@ services:
       context: .
       dockerfile: Dockerfile
     restart: unless-stopped
-    ports:
-      - "80:80"
     expose:
-      - "80"
+    - "80"
     environment:
       TZ: "UTC"
     volumes:
-      - wallos-db:/var/www/html/db
-      - wallos-logos:/var/www/html/images/uploads/logos
+    - wallos-db:/var/www/html/db
+    - wallos-logos:/var/www/html/images/uploads/logos
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://127.0.0.1/health.php"]
       interval: 30s
       timeout: 5s
       start_period: 30s
       retries: 5
-
 volumes:
-  wallos-db:
+  wallos-db: 
   wallos-logos:
