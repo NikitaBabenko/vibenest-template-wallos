@@ -14,6 +14,11 @@
   [![Discord](https://img.shields.io/discord/1237073478910214235?logo=discord&style=flat-square)](https://discord.gg/anex9GUrPW)
 </div>
 
+> **VibeNest deployment fork:** this fork tracks upstream Wallos and adds a
+> pinned, 256 MB runtime profile plus persistent SQLite/logo volumes. See
+> [VIBENEST.md](VIBENEST.md) for the exact upstream revision, resource limits,
+> persistence paths and optional-integration caveats.
+
 
 ## Table of Contents
 

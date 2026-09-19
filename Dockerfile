@@ -1,50 +1,23 @@
-# Use the php:8.3-fpm-alpine base image
-FROM php:8.3-fpm-alpine
+# VibeNest runtime adapter for Wallos 5.8.1.
+#
+# The upstream source tree and GPL-3.0 license remain in this fork. Runtime is
+# based on the matching official release image so a deploy does not recompile
+# PHP extensions on a 256 MB application slot. The multi-platform image digest
+# pins the exact upstream artifact published for v5.8.1.
+FROM bellamy/wallos:5.8.1@sha256:0f049dbab45b9f8e8d43b84fd1b77ef9e55909bd1a384a0f4fe8597ab68a1d5d
 
-# Set working directory to /var/www/html
-WORKDIR /var/www/html
+LABEL org.opencontainers.image.source="https://github.com/NikitaBabenko/vibenest-template-wallos" \
+      org.opencontainers.image.documentation="https://github.com/NikitaBabenko/vibenest-template-wallos/blob/main/VIBENEST.md" \
+      org.opencontainers.image.licenses="GPL-3.0" \
+      org.opencontainers.image.version="5.8.1-vibenest.1" \
+      org.opencontainers.image.revision="844cea04e3025f75494e954aaa67af7386d4840a"
 
-# Update packages and install dependencies
-RUN apk upgrade --no-cache && \
-    apk add --no-cache dumb-init shadow sqlite-dev libpng libpng-dev libjpeg-turbo libjpeg-turbo-dev freetype freetype-dev curl autoconf libgomp icu-dev icu-data-full nginx dcron tzdata libzip-dev sqlite libwebp-dev && \
-    docker-php-ext-install pdo pdo_sqlite calendar && \
-    docker-php-ext-enable pdo pdo_sqlite && \
-    docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp && \
-    docker-php-ext-install -j$(nproc) gd intl zip
+# The upstream image uses 15 dynamic PHP workers and 256 MB uploads. On the
+# VibeNest Free profile (256 MB RAM / 0.5 vCPU), two on-demand workers keep the
+# idle footprint small and cap request concurrency. A 64 MB request ceiling is
+# enough for ordinary logo uploads and modest backup restores without letting a
+# single request consume the whole container budget.
+COPY vibenest/php-fpm.conf /usr/local/etc/php-fpm.d/zzzz-vibenest.conf
+COPY vibenest/php.ini /usr/local/etc/php/conf.d/zzzz-vibenest.ini
 
-# Copy your PHP application files into the container
-COPY . .
-
-# Copy Nginx configuration
-COPY nginx.conf /etc/nginx/nginx.conf
-COPY nginx.default.conf /etc/nginx/http.d/default.conf
-
-# Remove nginx conf files from webroot
-RUN rm -rf /var/www/html/nginx.conf && \
-    rm -rf /var/www/html/nginx.default.conf
-
-# Copy the custom crontab file
-COPY cronjobs /etc/cron.d/cronjobs
-
-# Convert the line endings, allow read access to the cron file, and create cron log folder
-RUN dos2unix /etc/cron.d/cronjobs && \
-    chmod 0644 /etc/cron.d/cronjobs && \
-    /usr/bin/crontab /etc/cron.d/cronjobs && \
-    mkdir /var/log/cron && \
-    chown -R www-data:www-data /var/www/html && \
-    chmod +x /var/www/html/startup.sh && \
-    echo 'pm.max_children = 15' >> /usr/local/etc/php-fpm.d/zz-docker.conf && \
-    echo 'pm.max_requests = 500' >> /usr/local/etc/php-fpm.d/zz-docker.conf && \
-    printf 'upload_max_filesize = 256M\npost_max_size = 256M\n' > /usr/local/etc/php/conf.d/wallos-uploads.ini
-
-# Expose port 80 for Nginx
 EXPOSE 80
-
-ENTRYPOINT ["dumb-init", "--"]
-
-# Requires docker engine 25+ for the --start-interval flag
-HEALTHCHECK --interval=2m --timeout=2s --start-period=20s --start-interval=5s --retries=3 \
-    CMD ["curl", "-fsS", "http://127.0.0.1/health.php"]
-
-# Start both PHP-FPM, Nginx
-CMD ["/var/www/html/startup.sh"]
